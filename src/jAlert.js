@@ -134,6 +134,8 @@
                             alertWrap.hide();
                         }
 
+                        toggleFocusTrap();
+
                         if(typeof onClose == 'function')
                         {
                             onClose(alert.instance);
@@ -546,7 +548,7 @@
 
             if( alert.closeBtn )
             {
-                html += 		"<div class='closejAlert ja_close";
+                html += 		"<div tabindex=0 role='button' aria-pressed='false' class='closejAlert ja_close";
                 if( alert.closeBtnAlt )
                 {
                     html += ' ja_close_alt';
@@ -638,13 +640,20 @@
 
             //add close button handler
             if( alert.closeBtn ){
-
+                /* Close jAlert when closeBtn is clicked */
                 alert.instance.on('click', '.closejAlert', function(e){
                     e.preventDefault();
                     $(this).parents('.jAlert:first').closeAlert();
                     return false;
                 });
-
+                /* Close jAlert when closeBtn is tabbed to and Enter is pressed */
+                alert.instance.on('keydown', '.closejAlert', function(e){
+                    if(e.originalEvent.key === 'Enter'){
+                      e.preventDefault();
+                      $(this).parents('.jAlert:first').closeAlert();
+                      return false;
+                    }
+                });
             }
 
             /* Bind mouseup handler to document if this alert has closeOnClick enabled */
@@ -669,13 +678,11 @@
 
             }
 
-            /* If there are onOpen callbacks, run them. */
-            if( alert.onOpen )
-            {
-                $.each(alert.onOpen, function(index, onOpen){
-                    onOpen(alert.instance);
-                });
-            }
+            /* Run onOpen callbacks */
+            alert.onOpen.push(toggleFocusTrap);
+            $.each(alert.onOpen, function(index, onOpen){
+                onOpen(alert.instance);
+            });
 
             /* If the alert has an element that should be focused by default */
             if( alert.autofocus )
@@ -820,6 +827,54 @@
             return false;
         }
     };
+
+    var toggleFocusTrap = function() {
+      var curAlert = $.jAlert('current');
+
+      if(curAlert){
+        document.querySelectorAll('*').forEach( function(el) {
+          if(focusable(el)){ /* DOM element is focusable */
+            if(!$.contains(curAlert.instance[0], el)){ /* If focusable element is NOT in the current jAlert */
+              $(el).addClass("trap-disabled").attr("tabindex", -1).attr("aria-hidden", true);
+            } else { /* If focusable element IS in the current jAlert (useful for multiple stacked jAlerts) */
+              $(el).removeClass("trap-disabled").attr("tabindex", 0).attr("aria-hidden", false);;
+            }
+          }
+        });
+      } else {
+        $(".trap-disabled").removeClass("trap-disabled").attr("tabindex", 0).attr("aria-hidden", false);
+      }
+    };
+
+    /* This function returns true/false whether or not a given element is focusable. Can be replaced by JQeury UI's $(":focusable"), if JQueryUI were to become a dependency. */
+    function focusable( element ) {
+      var map, mapName, img,
+          nodeName = element.nodeName.toLowerCase(),
+          isTabIndexNotNaN = !isNaN( $.attr( element, "tabindex" ) );
+      if ( "area" === nodeName ) {
+          map = element.parentNode;
+          mapName = map.name;
+          if ( !element.href || !mapName || map.nodeName.toLowerCase() !== "map" ) {
+              return false;
+          }
+          img = $( "img[usemap=#" + mapName + "]" )[0];
+          return !!img && visible( img );
+      }
+      return ( /input|select|textarea|button|object/.test( nodeName ) ?
+          !element.disabled :
+          "a" === nodeName ?
+              element.href || isTabIndexNotNaN :
+              isTabIndexNotNaN) &&
+          // the element and all of its ancestors must be visible
+          visible( element );
+  
+      function visible( element ) {
+        return $.expr.filters.visible( element ) &&
+          !$( element ).parents().addBack().filter(function() {
+            return $.css( this, "visibility" ) === "hidden";
+          }).length;
+      }
+  }
 
     /** Mouseup on document */
     $.fn.jAlert.onMouseUp = function(e){
