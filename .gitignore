@@ -2,3 +2,4 @@ index-assets/*
 index.html
 ajax-dummy.html
 .idea
+/node_modules

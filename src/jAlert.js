@@ -534,7 +534,7 @@
 
             });
 
-            return "<a href='"+btn.href+"' id='"+btn.id+"' target='"+btn.target+"' class='ja_btn "+btn['class']+"'>"+btn.text+"</a> ";
+            return "<a href='"+btn.href+"' id='"+btn.id+"' target='"+btn.target+"' class='ja_btn "+btn['class']+"'"+(btn.role?" role='"+btn.role+"'":"")+">"+btn.text+"</a> ";
         };
 
         /* Adds a new alert to the dom */
@@ -542,7 +542,7 @@
 
             var html = '';
 
-            html += '<div class="ja_wrap '+backgroundClasses.join(' ')+'">'+
+            html += '<div class="ja_wrap '+backgroundClasses.join(' ')+'" role="alertdialog" aria-modal="true">'+
                 '<div class="jAlert '+classes.join(' ')+ '" style="' +styles.join(' ')+ '" id="' +alert.id+ '">'+
                 '<div>';
 
@@ -561,7 +561,12 @@
                 {
                     html += ' ja_close_round';
                 }
-                html += "'>&times;</div>"; //closejAlert has a close handler attached, ja_close is for styling
+                html += "'";
+                
+                if(alert.closeTextAriaLabel) {
+                    html += ' aria-label="'+$("<div>").text(alert.closeTextAriaLabel).html()+'"';
+                }
+                html += ">&times;</div>"; //closejAlert has a close handler attached, ja_close is for styling
             }
 
             if( alert.title )
@@ -832,7 +837,7 @@
       var curAlert = $.jAlert('current');
 
       if(curAlert){
-        document.querySelectorAll('*').forEach( function(el) {
+        document.querySelectorAll('body *').forEach( function(el) {
           if(focusable(el)){ /* DOM element is focusable */
             if(!$.contains(curAlert.instance[0], el)){ /* If focusable element is NOT in the current jAlert */
               $(el).addClass("trap-disabled").attr("tabindex", -1).attr("aria-hidden", true);
